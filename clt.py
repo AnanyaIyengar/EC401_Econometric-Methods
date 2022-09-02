@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 def clt(n, a, b, reps):
     '''
     :param n: size of the sample
-    :param a: lower bound for the range of values required
-    :param b: upper bound for the range of values required
+    :param a: lower bound for the range of values required (inclusive)
+    :param b: upper bound for the range of values required (inclusive)
     :param reps: number of samples chosen
     :return: list of means of the samples chosen and plotted histogram of means
     '''
