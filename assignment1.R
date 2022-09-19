@@ -3,16 +3,17 @@
 #########################################################################
 
 #Downloading Required Packages
-library(readxl)
+library(readr)
 library(dplyr)
 library(ggplot2)
 library(lmtest)
 library(rmarkdown)
-library(gridExtra)
 
 #Importing Data
-time_invar <- read_excel("time_invar.xlsx")
-time_var <- read_excel("time_var.xlsx")
+time_invar <- read_table2("time_invar.txt", col_names = FALSE)
+colnames(time_invar) <- c("ability", "mother_edu", "father_edu", "broken_home", "siblings")
+time_var <- read_table2("time_var.txt", col_names = FALSE)
+colnames(time_var) <- c("person_id", "education", "logwage", "potential_exp", "time_trend")
 
 #Grouping duplicate observations in the "time_var" dataset by taking means across time for each cross-sectional unit
 
@@ -20,22 +21,17 @@ time_var_1<-time_var%>%dplyr::group_by(person_id)%>%summarise(education = mean(e
 nrow(time_var_1)
 nrow(time_invar)
 nrow(time_var)
-max(time_var$person_id) #Returns 999
-
-#The "time_var" data set only has data for unique person ids ranging from 1 to 999, therefore we truncate the "time_invar" data set to only include the first 999 observations
-
-time_invar_1<-time_invar[1:999, ] #Since row j corresponds to person_id j
-nrow(time_invar_1)
+max(time_var$person_id) 
 
 #Given set X1: constant, education, experience, ability (OWN CHARACTERISTICS)
 
-constant <- rep(1, 999)
-x1 <- cbind(constant, time_var_1$education, time_var_1$potential_exp, time_invar_1$ability)
+constant <- rep(1, nrow(time_var_1))
+x1 <- cbind(constant, time_var_1$education, time_var_1$potential_exp, time_invar$ability)
 colnames(x1) <- c("constant", "education", "potential_exp", "ability")
 
 #Given set X2: mother's education, father's education, number of siblings (HH CHARACTERISTICS)
 
-x2 <- cbind(time_invar_1$mother_edu, time_invar_1$father_edu, time_invar_1$siblings)
+x2 <- cbind(time_invar$mother_edu, time_invar$father_edu, time_invar$siblings)
 colnames(x2) <- c("mother_edu", "father_edu", "siblings")
 
 #Given y: log wage
@@ -51,22 +47,22 @@ data1<- data.frame(y, x1)
 
 plot1 <- ggplot(data1, aes(education, y)) + geom_jitter(colour = "purple4") + theme_gray() + xlab("Own Education") + ylab("Log Wage") + ggtitle("Plotting Log Wage against Education")
 plot1
-cor(time_var_1$logwage, time_var_1$education) #-0.17: wages and education are negatively correlated (mainly due to some outliers)
+cor(time_var_1$logwage, time_var_1$education) 
 
 plot2<- ggplot(data1, aes(ability, y)) + geom_jitter(colour = "purple4") + theme_gray() + xlab("Own Ability") + ylab("Log Wage") + ggtitle("Plotting Log Wage against Ability")
 plot2
-cor(time_var_1$logwage, time_invar_1$ability) #0.185: slight positive correlation
+cor(time_var_1$logwage, time_invar$ability)
 
 plot3<- ggplot(data1, aes(potential_exp, y)) + geom_jitter(colour = "purple4") + theme_gray() + xlab("Potential Experience") + ylab("Log Wage") + ggtitle("Plotting Log Wage against Potential Experience")
 plot3
-cor(time_var_1$logwage, time_var_1$potential_exp) #0.021: very slight positive to no correlation
+cor(time_var_1$logwage, time_var_1$potential_exp) 
 
 
 #Multicollinearity Check
-cor(time_invar_1$ability, time_var_1$education) #0.49 < 0.80
-cor(time_var_1$education, time_var_1$potential_exp) #-0.35 > -0.80
-cor(time_var_1$education, time_invar_1$mother_edu) #0.32 < 0.80
-cor(time_var_1$education, time_invar_1$father_edu) #0.343 < 0.80 
+cor(time_invar$ability, time_var_1$education) #0.56
+cor(time_var_1$education, time_var_1$potential_exp) #-0.43
+cor(time_var_1$education, time_invar$mother_edu) #0.368
+cor(time_var_1$education, time_invar$father_edu) #0.400
 
 
 #Q3: Regression Specification: logwage ~ edu + potential_exp + ability
